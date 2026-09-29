@@ -1,0 +1,51 @@
+---
+import SnippetRow from './SnippetRow.astro';
+import Icon from './Icon.astro';
+import { CATEGORIES, MODEL_TYPES, MODEL_TYPE_LABELS, SITE } from '../consts';
+import { allLanguages, groupByProvider, type Snippet } from '../lib/snippets';
+interface Props { snippets: Snippet[]; category?: string; }
+const { snippets, category = '' } = Astro.props;
+const languages = allLanguages(snippets);
+const providers = groupByProvider(snippets);
+---
+<div data-explorer data-initial-category={category}>
+  <form class="filters" data-filters role="search" aria-label="Filter snippets">
+    <div class="search-field"><Icon name="search" size={20} /><label class="visually-hidden" for="f-q">Search snippets</label><input id="f-q" data-search-input data-filter="q" name="q" type="search" placeholder="Search by task, provider, SDK, or language…" autocomplete="off" /><kbd>/</kbd></div>
+    <div class="filter-controls">
+      <div class="filter-field"><label for="f-category">Category</label><select class="control-select" id="f-category" name="category" data-filter="category"><option value="">All categories</option>{CATEGORIES.map(c => <option value={c.id} selected={category === c.id}>{c.label}</option>)}</select></div>
+      <div class="filter-field"><label for="f-provider">Provider</label><select class="control-select" id="f-provider" name="provider" data-filter="provider"><option value="">All providers</option>{providers.map(p => <option value={p.provider}>{p.provider}</option>)}</select></div>
+      <div class="filter-field"><label for="f-language">Language</label><select class="control-select" id="f-language" name="language" data-filter="language"><option value="">All languages</option>{languages.map(l => <option value={l}>{l}</option>)}</select></div>
+      <label class="saved-filter"><input type="checkbox" data-filter="saved" value="1" name="saved" /><Icon name="bookmark" size={15} /> Saved only</label>
+      <button class="control-button control-button--compact clear-filter" type="reset">Reset filters</button>
+    </div>
+    <details class="more-filters"><summary>More filters <span>Model type & source check</span></summary><div class="filter-controls"><div class="filter-field"><label for="f-type">Model type</label><select class="control-select" id="f-type" name="modelType" data-filter="modelType"><option value="">All model types</option>{MODEL_TYPES.map(t => <option value={t}>{MODEL_TYPE_LABELS[t]}</option>)}</select></div><div class="filter-field"><label for="f-freshness">Source check</label><select class="control-select" id="f-freshness" name="freshness" data-filter="freshness"><option value="">Any date</option><option value="current">Within 120 days</option><option value="due">Due for a re-check</option></select></div></div></details>
+  </form>
+  <div class="active-filters" data-active-filters aria-label="Active filters"></div>
+  <div class="results-bar"><p data-count role="status" aria-live="polite">{snippets.length} snippets</p><div><label for="f-sort">Sort by</label><select class="control-select" id="f-sort" data-filter="sort"><option value="">Recently checked</option><option value="title">Title A–Z</option><option value="provider">Provider A–Z</option></select></div></div>
+  <noscript><p class="noscript-note">Enable JavaScript to search, filter, and save snippets. All examples are available below.</p></noscript>
+  <div class="explorer-grid" data-rows>{snippets.map(snippet => <SnippetRow snippet={snippet} showCategory />)}</div>
+  <div class="empty-state" data-empty hidden><span class="empty-icon"><Icon name="search" size={28} /></span><h2 data-empty-title>No snippets found</h2><p data-empty-description>Try a broader search or remove a filter to see more examples.</p><button class="button button--quiet" data-clear-all type="button">Clear all filters</button><a href={`${SITE.issues}/new`}>Request an example <Icon name="external" size={12} /></a></div>
+</div>
+<script>
+  import '../scripts/explorer';
+</script>
+<style>
+  .filters { border: 1px solid var(--rule); border-radius: 11px; background: var(--sheet); overflow: hidden; }
+  .search-field { display: flex; align-items: center; gap: 13px; padding: 15px 20px; color: var(--ink-3); border-bottom: 1px solid var(--rule-soft); }
+  .search-field:focus-within { box-shadow: inset 3px 0 var(--stamp); }
+  .search-field input { flex: 1; min-width: 0; height: 30px; background: none; border: 0; outline: 0; color: var(--ink); font-size: .87rem; }
+  .search-field input::placeholder { color: var(--ink-3); }
+  .filter-controls { display: flex; gap: 15px; flex-wrap: wrap; padding: 17px 20px; align-items: end; }
+  .filter-field { flex: 1; min-width: 125px; display: grid; gap: 5px; }
+  .filter-field label { font-size: .65rem; color: var(--ink-3); }
+  .saved-filter { display: flex; align-items: center; gap: 6px; min-height: 37px; font-size: .72rem; color: var(--ink-2); cursor: pointer; }.saved-filter input { accent-color: var(--stamp); }
+  .clear-filter { color: var(--ink-2); }
+  .more-filters { border-top: 1px solid var(--rule-soft); }.more-filters summary { padding: 10px 20px; font-size: .69rem; color: var(--ink-2); cursor: pointer; }.more-filters summary span { color: var(--ink-3); margin-left: 9px; font-size: .62rem; }.more-filters .filter-controls { padding-top: 6px; max-width: 550px; }
+  .results-bar { display: flex; gap: 10px; align-items: center; justify-content: space-between; margin: 24px 0 18px; font-size: .74rem; color: var(--ink-2); }.results-bar p { margin: 0; }.results-bar > div { display: flex; gap: 10px; align-items: center; }.results-bar label { font-size: .65rem; color: var(--ink-3); }.results-bar .control-select { width: auto; min-width: 175px; min-height: 36px; border-radius: 7px; font-size: .72rem; }
+  .explorer-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; }
+  .active-filters { display: flex; gap: 8px; flex-wrap: wrap; }.active-filters:not(:empty) { margin-top: 17px; }.active-filters :global(button) { border: 1px solid var(--rule); border-radius: 5px; background: var(--stamp-soft); color: var(--stamp); font-size: .65rem; padding: 5px 9px; }
+  .empty-state { text-align: center; border: 1px dashed var(--rule); border-radius: 12px; padding: 55px 25px; }.empty-icon { display: inline-grid; place-items: center; width: 58px; height: 58px; border-radius: 15px; background: var(--sheet-2); color: var(--ink-3); margin-bottom: 18px; }.empty-state h2 { font-size: 1.25rem; }.empty-state p { margin: 12px auto 23px; color: var(--ink-2); font-size: .8rem; max-width: 50ch; }.empty-state > a { display: block; margin-top: 20px; font-size: .74rem; }
+  .noscript-note { color: var(--ink-2); padding: 16px; background: var(--stamp-soft); }
+  @media (max-width: 1250px) { .explorer-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+  @media (max-width: 580px) { .explorer-grid { grid-template-columns: 1fr; }.filter-controls { gap: 10px; padding: 13px; }.filter-field { flex-basis: 40%; }.search-field { padding: 12px; }.search-field input { font-size: .75rem; }.results-bar { flex-wrap: wrap; }.results-bar > div { margin-left: auto; } }
+</style>

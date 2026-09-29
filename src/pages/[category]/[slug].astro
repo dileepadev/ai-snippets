@@ -1,0 +1,365 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Base from '../../layouts/Base.astro';
+import SnippetBody from '../../components/SnippetBody.astro';
+import Freshness from '../../components/Freshness.astro';
+import Icon from '../../components/Icon.astro';
+import SaveButton from '../../components/SaveButton.astro';
+import SnippetRow from '../../components/SnippetRow.astro';
+import { MODEL_TYPE_LABELS, SITE, type ModelType } from '../../consts';
+import { allSnippets, formatDate, type Snippet } from '../../lib/snippets';
+import { href } from '../../lib/url';
+
+export const getStaticPaths = (async () => {
+  const snippets = await allSnippets();
+  return snippets.map((snippet) => ({
+    params: { category: snippet.category.id, slug: snippet.slug },
+    props: { snippet },
+  }));
+}) satisfies GetStaticPaths;
+
+interface Props {
+  snippet: Snippet;
+}
+
+const { snippet } = Astro.props;
+const { data } = snippet;
+
+const catalogue = await allSnippets();
+const related = catalogue.filter(s => s.id !== snippet.id).map(s => ({ snippet: s, score: (s.category.id === snippet.category.id ? 3 : 0) + (s.data.provider === data.provider ? 1 : 0) + s.data.tags.filter(tag => data.tags.includes(tag)).length })).filter(s => s.score > 0).sort((a,b) => b.score - a.score).slice(0, 3);
+const siblings = catalogue.filter((s) => s.category.id === snippet.category.id);
+const at = siblings.findIndex((s) => s.id === snippet.id);
+const previous = siblings[at - 1];
+const next = siblings[at + 1];
+
+const packages = Object.entries(data.packages);
+const fileUrl = `${SITE.repo}/blob/main/${snippet.file}`;
+const issueUrl = `${SITE.issues}/new?title=${encodeURIComponent(`Out of date: ${data.title} (${data.provider})`)}&body=${encodeURIComponent(`Snippet: ${snippet.file}\nSource: ${data.source}\nLast checked: ${formatDate(data.verified)}\n\nWhat changed at the source:\n`)}`;
+const description =
+  data.description ?? `${data.title} for ${data.provider} ${data.product}, copied from the official documentation.`;
+---
+
+<Base title={`${data.title} — ${data.provider}`} description={description}>
+  <div class="shell sheet">
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <a href={href('/browse')}>All snippets</a>
+      <a href={href(`/${snippet.category.id}`)}>{snippet.category.label}</a>
+    </nav>
+
+    <header class="head">
+      <p class="eyebrow">{snippet.category.label} / {data.provider}</p>
+      <h1>{data.title}</h1>
+      <p class="head__who">
+        <span class="head__provider">{data.provider}</span>
+        <span class="head__product">{data.product}</span>
+      </p>
+      {data.description && <p class="head__desc">{data.description}</p>}
+      <ul class="tags">
+        {
+          data.model_types.map((type: ModelType) => (
+            <li>{MODEL_TYPE_LABELS[type]}</li>
+          ))
+        }
+        {data.tags.map((tag: string) => <li class="tags__plain">{tag}</li>)}
+      </ul>
+      <div class="snippet-actions"><a class="button" href={data.source} rel="noopener">Open official source <Icon name="external" size={15} /></a><SaveButton id={snippet.id} title={data.title} full /><a class="source-file" href={fileUrl}>View Markdown <Icon name="external" size={12} /></a></div>
+    </header>
+
+    <div class="layout">
+      <div class="layout__main">
+        {data.prerequisites.length > 0 && <section class="context-box"><div class="context-heading"><Icon name="terminal" size={18} /><h2>Before you run</h2><span>EDITORIAL CONTEXT</span></div><ul>{data.prerequisites.map(item => <li>{item}</li>)}</ul>{data.caveat && <p class="context-note">{data.caveat}</p>}</section>}
+        <div class="code-heading"><h2>The official example</h2><span>Choose a language · Copy or download</span></div>
+        <SnippetBody snippet={snippet} />
+        {data.expected_output && <section class="expected-output"><Icon name="check" size={18} /><div><h2>What to expect</h2><p>{data.expected_output}</p></div></section>}
+
+        <nav class="pager" aria-label="Other snippets in this category">
+          {
+            previous ? (
+              <a class="pager__link" href={previous.url}>
+                <span>Previous in {snippet.category.label}</span>
+                {previous.data.title}
+              </a>
+            ) : (
+              <span />
+            )
+          }
+          {
+            next && (
+              <a class="pager__link pager__link--next" href={next.url}>
+                <span>Next in {snippet.category.label}</span>
+                {next.data.title}
+              </a>
+            )
+          }
+        </nav>
+      </div>
+
+      <aside class="layout__aside">
+        <section class="stamp">
+          <h2 class="stamp__head"><Icon name="book" size={16} /> Source & verification</h2>
+          <dl class="stamp__body">
+            <dt>Copied from</dt>
+            <dd>
+              <a href={data.source} rel="noopener nofollow">{snippet.sourceHost}</a>
+              <span class="stamp__url">{data.source}</span>
+            </dd>
+
+            <dt>Source last checked</dt>
+            <dd><Freshness freshness={snippet.freshness} verified={data.verified} long /></dd>
+
+            {
+              packages.length > 0 && (
+                <>
+                  <dt>Recorded packages</dt>
+                  <dd>
+                    <ul class="stamp__packages">
+                      {packages.map(([lang, spec]) => (
+                        <li>
+                          <span class="stamp__lang">{lang}</span>
+                          <code>{spec}</code>
+                        </li>
+                      ))}
+                    </ul>
+                  </dd>
+                </>
+              )
+            }
+
+            <dt>Languages</dt>
+            <dd>{snippet.languages.join(', ') || 'None'}</dd>
+          </dl>
+          <p class="verification-note">A source check records a comparison with the official example. It is not a runtime test.{packages.length === 0 && ` ${data.package_notes ?? 'No package version has been recorded.'}`}</p>
+          <p class="stamp__warning" data-check-warning data-verified={formatDate(data.verified)} hidden={snippet.freshness.state === 'current'}>
+            This example is due for a source re-check. Compare it with the official page before relying on the recorded version.
+          </p>
+        </section>
+
+        {
+          data.resources.length > 0 && (
+            <section class="aside-block">
+              <h2>Official links</h2>
+              <ul>
+                {data.resources.map((resource: { label: string; url: string }) => (
+                  <li>
+                    <a href={resource.url} rel="noopener nofollow">
+                      {resource.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        }
+
+        <section class="aside-block">
+          <h2>This page</h2>
+          <ul>
+            <li><a href={fileUrl} rel="noopener">View the Markdown file</a></li>
+            <li><a href={`${fileUrl.replace('/blob/', '/edit/')}`} rel="noopener">Re-check and edit it</a></li>
+            <li><a href={issueUrl} rel="noopener">Report it as out of date</a></li>
+          </ul>
+        </section>
+      </aside>
+    </div>
+    {related.length > 0 && <section class="related"><div class="section-title"><div><h2>Keep building</h2><p>Related examples across the library.</p></div><a href={href(`/${snippet.category.id}`)}>Explore {snippet.category.label} <Icon name="arrow" size={15} /></a></div><div class="related-grid">{related.map(({ snippet: item }) => <SnippetRow snippet={item} showCategory />)}</div></section>}
+  </div>
+</Base>
+
+<style>
+  .sheet { padding-block: 2rem 3.5rem; }
+
+  .crumbs {
+    display: flex;
+    gap: 0.75rem;
+    font-size: var(--t-sm);
+    margin-bottom: 1.5rem;
+  }
+  .crumbs a { color: var(--ink-2); text-decoration: none; }
+  .crumbs a:hover { color: var(--stamp); text-decoration: underline; }
+  .crumbs a + a::before {
+    content: '/';
+    color: var(--ink-3);
+    margin-right: 0.75rem;
+  }
+
+  .head {
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .head h1 {
+    font-size: clamp(1.5rem, 4vw, 2.1rem);
+    margin-bottom: 0.6rem;
+  }
+  .head__who {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin: 0;
+    font-size: var(--t-md);
+  }
+  .head__provider { font-weight: 600; }
+  .head__product { color: var(--ink-2); }
+  .head__desc { margin: 0.75rem 0 0; color: var(--ink-2); }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    list-style: none;
+    margin: 1rem 0 0;
+    padding: 0;
+  }
+  .tags li {
+    font-family: var(--font-mono);
+    font-size: var(--t-xs);
+    padding: 0.1rem 0.45rem;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    color: var(--ink-2);
+    background: var(--sheet);
+  }
+  .tags__plain { color: var(--ink-3); }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 260px;
+    gap: 2rem;
+    align-items: start;
+  }
+  @media (max-width: 1180px) {
+    .layout { grid-template-columns: 1fr; gap: 2rem; }
+  }
+
+  .layout__main { min-width: 0; }
+  .layout__main :global(.prose) { max-width: none; }
+
+  .layout__aside {
+    position: sticky;
+    top: 76px;
+    display: grid;
+    gap: 1.75rem;
+    font-size: var(--t-sm);
+  }
+  @media (max-width: 1180px) {
+    .layout__aside { position: static; }
+  }
+
+  /* The provenance block is the point of the project, so it gets the weight. */
+  .stamp {
+    border: 1px solid var(--rule);
+    border-top: 3px solid var(--fresh);
+    border-radius: var(--radius);
+    background: var(--sheet);
+    padding: 0.9rem 1rem 1rem;
+  }
+  .stamp__head {
+    font-family: var(--font-mono);
+    font-size: var(--t-xs);
+    letter-spacing: 0.02em;
+    margin-bottom: 0.75rem;
+    color: var(--ink);
+  }
+  .stamp__body {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+    margin: 0;
+  }
+  .stamp__body dt {
+    font-size: var(--t-xs);
+    color: var(--ink-3);
+    margin-top: 0.75rem;
+  }
+  .stamp__body dt:first-child { margin-top: 0; }
+  .stamp__body dd { margin: 0; overflow-wrap: anywhere; }
+  .stamp__url {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    line-height: 1.4;
+    color: var(--ink-3);
+    margin-top: 0.15rem;
+  }
+  .stamp__packages { list-style: none; margin: 0; padding: 0; }
+  .stamp__packages li {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0 0.5rem;
+    margin-bottom: 0.3rem;
+  }
+  .stamp__lang {
+    font-size: var(--t-xs);
+    color: var(--ink-3);
+  }
+  .stamp__packages code { font-size: var(--t-xs); }
+  .stamp__warning {
+    margin: 0.9rem 0 0;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--rule-soft);
+    font-size: var(--t-xs);
+    color: var(--aging);
+  }
+  .stamp__warning code { color: inherit; }
+
+  .aside-block h2 {
+    font-size: var(--t-xs);
+    color: var(--ink-3);
+    font-weight: 700;
+    letter-spacing: 0;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 0.5rem;
+  }
+  .aside-block ul { list-style: none; margin: 0; padding: 0; }
+  .aside-block li { margin-bottom: 0.3rem; }
+
+  .pager {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 2.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--rule);
+  }
+  .pager__link {
+    display: block;
+    text-decoration: none;
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .pager__link span {
+    display: block;
+    font-size: var(--t-xs);
+    font-weight: 400;
+    color: var(--ink-3);
+    margin-bottom: 0.15rem;
+  }
+  .pager__link:hover { color: var(--stamp); }
+  .pager__link--next { text-align: right; grid-column: 2; }
+
+  @media (max-width: 560px) {
+    .pager { grid-template-columns: 1fr; }
+    .pager__link--next { grid-column: 1; text-align: left; }
+  }
+
+  .head .eyebrow { margin-bottom: 13px; font-size: .62rem; }
+  .head h1 { font-size: clamp(1.7rem, 3vw, 2.6rem); max-width: 30ch; }
+  .head__who { font-size: .88rem; margin-top: 14px; }
+  .head__desc { font-size: .87rem; max-width: 74ch; }
+  .snippet-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 24px; }
+  .source-file { display: inline-flex; align-items: center; gap: 6px; font-size: .72rem; color: var(--ink-3); text-decoration: none; margin-left: 5px; }
+  .context-box { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 20px; margin-bottom: 29px; }
+  .context-heading { display: flex; align-items: center; gap: 9px; color: var(--stamp); }
+  .context-heading h2 { font-size: .86rem; letter-spacing: -.015em; color: var(--ink); }
+  .context-heading span { margin-left: auto; font: .5rem var(--font-mono); letter-spacing: .06em; color: var(--ink-3); }
+  .context-box ul { padding-left: 18px; margin: 15px 0 0; color: var(--ink-2); font-size: .77rem; }
+  .context-box li { padding-left: 4px; margin-bottom: 7px; }
+  .context-note { border-top: 1px solid var(--rule-soft); margin-top: 15px; padding-top: 13px; color: var(--ink-2); font-size: .72rem; }
+  .code-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 15px; margin-bottom: 13px; }.code-heading h2 { font-size: .95rem; }.code-heading span { color: var(--ink-3); font-size: .63rem; }
+  .expected-output { display: flex; gap: 12px; background: var(--sheet-2); padding: 18px; border-radius: 9px; color: var(--fresh); }.expected-output h2 { color: var(--ink); font-size: .8rem; margin-bottom: 7px; }.expected-output p { color: var(--ink-2); font-size: .75rem; }
+  .stamp__head { font-family: var(--font-sans); display: flex; align-items: center; gap: 7px; font-size: .76rem; letter-spacing: 0; }.stamp__body dt { margin-top: 17px; }.stamp__body dd { font-size: .73rem; }.stamp__url { margin-top: 5px; font-size: .6rem; }.stamp__packages code { font-size: .67rem; }.verification-note { border-top: 1px solid var(--rule-soft); padding-top: 13px; margin-top: 17px; color: var(--ink-3); font-size: .65rem; }
+  .related { margin-top: 43px; border-top: 1px solid var(--rule); padding-top: 29px; }.related-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; }
+  @media(max-width:1180px) { .layout__aside { grid-template-columns: 1fr 1fr; }.stamp { grid-row: span 2; } }
+  @media(max-width:650px) { .layout__aside, .related-grid { grid-template-columns: 1fr; }.stamp { grid-row: auto; }.code-heading { flex-wrap: wrap; gap: 6px; }.context-heading span { display: none; } }
+</style>

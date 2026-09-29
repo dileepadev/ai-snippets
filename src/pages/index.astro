@@ -1,0 +1,103 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import SnippetBody from '../components/SnippetBody.astro';
+import SnippetRow from '../components/SnippetRow.astro';
+import { SITE, CATEGORIES } from '../consts';
+import { allSnippets, allLanguages, groupByProvider, countByCategory } from '../lib/snippets';
+import { collections, categoryIcons, categoryNames } from '../lib/catalogue';
+import { href } from '../lib/url';
+const snippets = await allSnippets();
+const providers = groupByProvider(snippets);
+const languages = allLanguages(snippets);
+const counts = countByCategory(snippets);
+const featured = snippets.find(s => s.slug === 'openai-generate-text');
+const picks = ['openai-generate-text', 'anthropic-create-message', 'google-gemini-generate-text', 'ollama-chat', 'langchain-create-agent', 'llamaindex-query-documents'].map(slug => snippets.find(s => s.slug === slug)).filter((s): s is NonNullable<typeof s> => Boolean(s));
+---
+<Base bare title={`${SITE.name} — Less searching. More building.`}>
+  <div class="shell home">
+    <section class="hero">
+      <div class="hero__copy">
+        <p class="eyebrow"><span class="status-dot"></span> YOUR AI DEVELOPMENT TOOLKIT</p>
+        <h1>Less searching.<br /><span>More building.</span></h1>
+        <p class="hero__description">The AI code you need, without the tab overload. Explore real examples from official docs, with the context to make them useful.</p>
+        <div class="hero__actions"><a class="button" href={href('/browse')}>Explore snippets <Icon name="arrow" size={16} /></a><a class="hero__secondary" href={href('/collections')}>Find a starting point <Icon name="arrow" size={14} /></a></div>
+        <div class="hero__proof"><span><Icon name="check" size={14} /> Official sources</span><span><Icon name="check" size={14} /> Date-stamped</span><span><Icon name="check" size={14} /> Open source</span></div>
+      </div>
+      {featured && <div class="hero__editor">
+        <div class="editor-title"><span class="window-dots"><i></i><i></i><i></i></span><span>your-next-idea.py</span><span class="editor-badge">OFFICIAL EXAMPLE</span></div>
+        <SnippetBody snippet={featured} />
+        <a class="editor-footer" href={featured.url}><span><span class="status-dot"></span> OpenAI · Responses API</span><span>View snippet <Icon name="arrow" size={14} /></span></a>
+      </div>}
+    </section>
+
+    <form class="control-search home-search" action={href('/browse')} role="search">
+      <Icon name="search" size={21} /><label for="home-q" class="visually-hidden">Search snippets</label><input id="home-q" data-search-input name="q" type="search" placeholder="What are you building? Try “streaming” or “embeddings”…" autocomplete="off" /><kbd>/</kbd><button class="control-button control-button--compact" type="submit">Search <Icon name="arrow" size={16} /></button>
+    </form>
+    <div class="search-under"><p>Try <a href={href('/browse?q=streaming')}>streaming</a><a href={href('/browse?q=tool-use')}>tool use</a><a href={href('/browse?category=local-models')}>local models</a></p><span>{snippets.length} snippets <i>·</i> {providers.length} providers <i>·</i> {languages.length} languages</span></div>
+
+    <section class="start-section">
+      <div class="section-title"><div><h2>A good place to start</h2><p>A few examples. A clear direction. Your next project.</p></div><a href={href('/collections')}>All collections <Icon name="arrow" size={15} /></a></div>
+      <div class="start-grid">{collections.slice(0, 4).map((collection, index) => <a class="start-card" href={href(`/collections#${collection.id}`)}><span class={`start-icon start-icon--${index}`}><Icon name={collection.icon} size={21} /></span><h3>{collection.title}</h3><p>{['Compare OpenAI, Claude, and Gemini.', 'Your hardware. Your model. Your code.', 'Connect a function to an agent loop.', 'From embeddings to your first RAG query.'][index]}</p><span class="start-card__bottom">{collection.steps.length} snippets <Icon name="arrow" size={15} /></span></a>)}</div>
+    </section>
+
+    <section class="picks-section">
+      <div class="section-title"><div><h2>Small snippets. Useful building blocks.</h2><p>Handpicked entry points across the AI stack.</p></div><a href={href('/browse')}>Browse all {snippets.length} <Icon name="arrow" size={15} /></a></div>
+      <div class="picks-grid">{picks.map(snippet => <SnippetRow snippet={snippet} showCategory />)}</div>
+    </section>
+
+    <section class="category-section">
+      <div class="section-title"><div><h2>Explore the stack</h2><p>From your first API call to tools, voice, and vision.</p></div><span class="section-note">{CATEGORIES.length} categories. One library.</span></div>
+      <div class="category-grid">{CATEGORIES.map(category => <a href={href(`/${category.id}`)}><Icon name={categoryIcons[category.id]} size={18} /><span>{categoryNames[category.id] ?? category.label}</span><span class="category-count">{counts[category.id] ?? 0}</span><Icon name="arrow" size={14} /></a>)}</div>
+    </section>
+
+    <section class="trust-strip"><span class="trust-icon"><Icon name="book" size={26} /></span><div><h2>Useful code starts with a source you can trust.</h2><p>Every example links to its official source and shows its last recorded check. Setup notes are added for context; source checks do not mean runtime testing.</p></div><a href={href('/contribute')}>How we curate <Icon name="arrow" size={15} /></a></section>
+  </div>
+</Base>
+<style>
+  .home { padding-top: 46px; padding-bottom: 20px; }
+  .hero { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(28px, 4vw, 65px); align-items: center; padding-bottom: 38px; }
+  .hero h1 { font-size: clamp(2.4rem, 3.65vw, 4.15rem); line-height: 1.08; letter-spacing: -.063em; font-weight: 650; }
+  .hero h1 span { color: var(--stamp); }
+  .hero__description { color: var(--ink-2); font-size: .92rem; line-height: 1.85; margin-top: 21px; max-width: 46ch; }
+  .hero__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 19px; margin-top: 24px; }
+  .hero__secondary { display: inline-flex; gap: 8px; align-items: center; color: var(--ink-2); text-decoration: none; font-size: .75rem; }
+  .hero__proof { display: flex; flex-wrap: wrap; gap: 16px; color: var(--ink-3); font-size: .65rem; margin-top: 26px; }
+  .hero__proof span { display: inline-flex; gap: 4px; align-items: center; }
+  .hero__proof svg { color: var(--fresh); }
+  .hero__editor { min-width: 0; background: #222925; color: #ecede6; border: 1px solid #333c35; border-radius: 12px; box-shadow: 0 12px 32px #28312213; transform: rotate(.5deg); overflow: hidden; }
+  .editor-title { display: flex; align-items: center; gap: 13px; padding: 16px; border-bottom: 1px solid #3a423b; font: .59rem var(--font-mono); color: #a5b0a4; }
+  .window-dots { display: flex; gap: 5px; }.window-dots i { width: 7px; height: 7px; border-radius: 50%; background: #dd8f70; }.window-dots i:nth-child(2) { background: #d4b779; }.window-dots i:nth-child(3) { background: #8aaa89; }
+  .editor-badge { margin-left: auto; font-size: .48rem; letter-spacing: .055em; color: #abbfa5; }
+  .hero__editor :global(.codegroup) { margin: 0; border: 0; border-radius: 0; background: #222925; }
+  .hero__editor :global(.codegroup__bar) { background: #222925; border-color: #3a423b; }
+  .hero__editor :global(.codegroup__tab), .hero__editor :global(.codegroup__copy), .hero__editor :global(.codegroup__download) { color: #afbaae !important; background: #222925 !important; border-color: #333c35; font-size: .58rem; padding: 9px 10px; }
+  .hero__editor :global(.codegroup__download) { display: none; }
+  .hero__editor :global(.codegroup > input:checked ~ .codegroup__bar > .codegroup__tab) { background: #222925; }
+  .hero__editor :global(pre.astro-code) { background: #222925 !important; font-size: .67rem; line-height: 1.95; min-height: 265px; max-height: 265px; }
+  .hero__editor :global(.astro-code), .hero__editor :global(.astro-code span) { color: var(--shiki-dark) !important; }
+  .editor-footer { display: flex; gap: 5px; justify-content: space-between; align-items: center; color: #aeb7aa; padding: 13px 17px; font-size: .6rem; text-decoration: none; border-top: 1px solid #3a423b; }
+  .editor-footer > span:last-child { display: flex; gap: 7px; align-items: center; }
+  .home-search { box-shadow: 0 3px 8px #1f271e03; }
+  .home-search button { gap: 18px; }
+  .home-search kbd { font-size: .72rem; margin-right: 8px; }
+  .search-under { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-top: 12px; font-size: .65rem; color: var(--ink-3); }
+  .search-under p { display: flex; gap: 12px; margin: 0; }.search-under a { color: var(--ink-2); text-decoration: none; }.search-under a:hover { color: var(--stamp); }.search-under i { font-style: normal; margin-inline: 7px; }
+  .start-section { padding-top: 42px; }.picks-section, .category-section { padding-top: 42px; }
+  .start-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 13px; }
+  .start-card { display: flex; flex-direction: column; padding: 20px; border: 1px solid var(--rule); border-radius: 9px; text-decoration: none; color: var(--ink); background: var(--sheet); transition: border-color .2s, transform .2s; }
+  .start-card:hover { border-color: var(--stamp); transform: translateY(-3px); }
+  .start-icon { display: grid; place-items: center; width: 38px; height: 38px; background: var(--stamp-soft); border-radius: 9px; color: var(--stamp); margin-bottom: 19px; }
+  .start-icon--1 { background: #e9efe7; color: #5b7254; }.start-icon--2 { background: #eaeefa; color: #6273a5; }.start-icon--3 { background: #f2eaf2; color: #927093; }
+  .start-card h3 { font-size: .82rem; letter-spacing: -.015em; line-height: 1.45; }.start-card p { color: var(--ink-3); font-size: .7rem; margin: 7px 0 19px; line-height: 1.7; }
+  .start-card__bottom { display: flex; align-items: center; justify-content: space-between; font-size: .64rem; color: var(--ink-2); margin-top: auto; }
+  .picks-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; }
+  .category-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
+  .category-grid a { display: flex; align-items: center; gap: 11px; color: var(--ink-2); text-decoration: none; font-size: .75rem; border: 1px solid var(--rule); padding: 15px; border-radius: 7px; background: var(--sheet); }
+  .category-grid a:hover { color: var(--stamp); border-color: var(--stamp); }.category-count { margin-left: auto; font: .65rem var(--font-mono); color: var(--ink-3); }.category-grid a > svg:last-child { color: var(--ink-3); }
+  .section-note { font-size: .7rem; color: var(--ink-3); }
+  .trust-strip { display: flex; align-items: center; gap: 20px; border-top: 1px solid var(--rule); padding-top: 28px; margin-top: 40px; }.trust-icon { color: var(--fresh); }.trust-strip h2 { font-size: .86rem; letter-spacing: -.015em; }.trust-strip p { color: var(--ink-3); font-size: .7rem; margin-top: 7px; max-width: 90ch; }.trust-strip a { display: flex; gap: 8px; align-items: center; white-space: nowrap; font-size: .7rem; text-decoration: none; margin-left: auto; }
+  @media (min-width: 1650px) { .home { padding-top: 65px; }.hero { padding-block: 15px 60px; }.hero__description { font-size: 1rem; } }
+  @media (max-width: 1200px) { .hero { grid-template-columns: 1fr; gap: 30px; }.hero__copy { max-width: 650px; }.hero h1 { font-size: 3.4rem; }.hero__editor { max-width: 650px; transform: none; }.hero__description { max-width: 60ch; }.start-grid { grid-template-columns: repeat(2, 1fr); }.picks-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }.category-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+  @media (max-width: 600px) { .home { padding-top: 32px; }.hero h1 { font-size: 2.85rem; }.hero { padding-bottom: 27px; }.eyebrow { font-size: .58rem; }.hero__editor { margin-top: 5px; }.picks-grid { grid-template-columns: 1fr; }.start-card { padding: 16px; }.home-search { padding-left: 12px; gap: 10px; }.home-search kbd { display: none; }.home-search button { padding: 9px; gap: 7px; }.home-search input { font-size: .72rem; }.section-title { align-items: flex-start; gap: 10px; }.section-title h2 { font-size: 1.12rem; }.section-title p { font-size: .72rem; }.section-title > a { font-size: .65rem; }.section-note { display: none; }.category-grid { grid-template-columns: 1fr; }.trust-strip { align-items: flex-start; flex-wrap: wrap; gap: 13px; }.trust-strip > div { flex: 1; }.trust-strip a { width: 100%; margin-left: 39px; } }
+</style>

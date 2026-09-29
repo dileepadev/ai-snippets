@@ -1,0 +1,152 @@
+---
+import '@fontsource-variable/public-sans';
+import '@fontsource-variable/jetbrains-mono';
+import '../styles/global.css';
+import { SITE, CATEGORIES } from '../consts';
+import { href, isWithin } from '../lib/url';
+import Icon from '../components/Icon.astro';
+import { allSnippets, countByCategory } from '../lib/snippets';
+import { categoryIcons, categoryNames } from '../lib/catalogue';
+import ThemeToggle from '../components/ThemeToggle.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Page heading used for the document title; omit on the home page. */
+  bare?: boolean;
+}
+
+const { title, description = SITE.description, bare = false } = Astro.props;
+const pageTitle = title && !bare ? `${title} — ${SITE.name}` : (title ?? `${SITE.name} — ${SITE.tagline}`);
+const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://dileepadev.github.io');
+const path = Astro.url.pathname;
+
+const snippets = await allSnippets();
+const counts = countByCategory(snippets);
+const nav = [
+  { label: 'Overview', path: '/', icon: 'grid' },
+  { label: 'All snippets', path: '/browse', icon: 'code' },
+  { label: 'Collections', path: '/collections', icon: 'layers' },
+  { label: 'Providers', path: '/providers', icon: 'nodes' },
+];
+const active = (url: string) => url === '/' ? path.replace(/\/$/, '') === href('/').replace(/\/$/, '') : isWithin(path, url);
+---
+
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical.href} />
+    <link rel="icon" href={href('/favicon.svg')} type="image/svg+xml" />
+    <link rel="sitemap" href={href('/sitemap-index.xml')} />
+    <meta name="generator" content={Astro.generator} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={SITE.name} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical.href} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="color-scheme" content="light dark" />
+    <script is:inline>
+      // Set the theme before first paint so the page never flashes. Reading
+      // localStorage throws when site data is blocked, so fall back to the
+      // system preference rather than letting the whole script die.
+      (() => {
+        let stored = null;
+        try {
+          stored = localStorage.getItem('ai-snippets-theme');
+        } catch {}
+        const dark =
+          stored === 'dark' ||
+          (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      })();
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="masthead">
+      <div class="masthead__inner">
+        <a class="wordmark" href={href('/')} aria-label="ai snippets home">
+          <span class="brand-icon"><Icon name="code" size={21} /></span> ai<span class="wordmark__slash">/</span>snippets<span class="brand-dot">.</span>
+        </a>
+        <span class="header-caption">A small shortcut to your next big idea.</span>
+        <nav class="masthead__nav" aria-label="Main">
+          <a class="header-search" href={href('/browse')} aria-label="Search snippets"><Icon name="search" size={16} /><span>Search</span><kbd>/</kbd></a>
+          <a class="github-link" href={SITE.repo} rel="noopener"><Icon name="github" size={18} /><span>GitHub</span><Icon name="external" size={12} /></a>
+          <ThemeToggle />
+          <button class="control-icon-button mobile-menu" aria-label="Toggle navigation" aria-expanded="false" aria-controls="sidebar" data-menu><Icon name="menu" /></button>
+        </nav>
+      </div>
+    </header>
+
+    <div class="app-frame">
+      <aside class="sidebar" id="sidebar">
+        <nav aria-label="Library">
+          <p class="nav-label">WORKSPACE</p>
+          {nav.map((item) => <a class="side-link" href={href(item.path)} aria-current={active(item.path) ? 'page' : undefined}><Icon name={item.icon} size={18} />{item.label}{item.path === '/browse' && <span class="nav-count">{snippets.length}</span>}</a>)}
+          <a class="side-link" href={href('/browse?saved=1')} data-saved-nav><Icon name="bookmark" size={18} />Saved snippets<span class="nav-count" data-saved-count>0</span></a>
+          <p class="nav-label nav-label--categories">EXPLORE BY CATEGORY</p>
+          {CATEGORIES.map((category) => <a class="side-link side-link--category" href={href(`/${category.id}`)} aria-current={active(`/${category.id}`) ? 'page' : undefined}><Icon name={categoryIcons[category.id]} size={17} />{categoryNames[category.id] ?? category.label}<span class="nav-count">{counts[category.id] ?? 0}</span></a>)}
+        </nav>
+        <a class="contribution-card" href={href('/contribute')}>
+          <span class="contribution-card__icon"><Icon name="plus" size={19} /></span>
+          <strong>Good code is worth sharing.</strong>
+          <span>Add an official example or help keep one up to date.</span>
+          <b>Contribute a snippet <Icon name="arrow" size={15} /></b>
+        </a>
+        <p class="sidebar-note"><span class="status-dot"></span> Open source. Always.</p>
+      </aside>
+      <div class="workspace">
+        <main id="main"><slot /></main>
+    <footer class="colophon">
+      <div class="shell">
+        <div class="colophon__grid">
+          <div class="colophon__wide">
+            <h2>Categories</h2>
+            <ul class="colophon__columns">
+              {
+                CATEGORIES.map((c) => (
+                  <li><a href={href(`/${c.id}`)}>{c.label}</a></li>
+                ))
+              }
+            </ul>
+          </div>
+          <div>
+            <h2>This site</h2>
+            <ul>
+              <li><a href={href('/browse')}>Browse every snippet</a></li>
+              <li><a href={href('/providers')}>Providers</a></li>
+              <li><a href={href('/contribute')}>Add or re-check a snippet</a></li>
+              <li><a href={SITE.issues} rel="noopener">Report an out-of-date snippet</a></li>
+            </ul>
+          </div>
+          <div>
+            <h2>Source</h2>
+            <ul>
+              <li><a href={SITE.repo} rel="noopener">Repository</a></li>
+              <li><a href={`${SITE.repo}/blob/main/LICENSE`} rel="noopener">MIT License</a></li>
+              <li><a href={SITE.authorUrl} rel="noopener">@{SITE.author}</a></li>
+            </ul>
+          </div>
+        </div>
+        <p class="colophon__note">
+          Snippets belong to their original authors and stay under the licence of their source; each one
+          links back to where it came from. The site code is MIT licensed. This project is not affiliated
+          with or endorsed by any company or project listed here.
+        </p>
+      </div>
+    </footer>
+
+      </div>
+    </div>
+    <div class="toast" role="status" aria-live="polite" data-toast hidden></div>
+    <script>
+      import '../scripts/site';
+    </script>
+  </body>
+</html>

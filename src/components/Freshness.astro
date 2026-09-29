@@ -1,0 +1,17 @@
+---
+import { formatDate, type Freshness } from '../lib/snippets';
+
+interface Props {
+  freshness: Freshness;
+  verified: Date;
+  /** Spell out the date as well as the age. */
+  long?: boolean;
+}
+
+const { freshness, verified, long = false } = Astro.props;
+const iso = formatDate(verified);
+---
+
+<span class="freshness" data-state={freshness.state} data-verified={iso} data-long={long} title={`Source last checked ${iso}. A source check is not a runtime test.`}>
+  <time datetime={iso}>{long ? `${freshness.phrase}, on ${iso}` : freshness.phrase}</time>
+</span>

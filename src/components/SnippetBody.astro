@@ -1,0 +1,13 @@
+---
+import { withLanguageTabs } from '../lib/code';
+import { renderedHtmlOf, type Snippet } from '../lib/snippets';
+
+interface Props {
+  snippet: Snippet;
+}
+
+const { snippet } = Astro.props;
+const { html } = withLanguageTabs(renderedHtmlOf(snippet.entry), snippet.slug);
+---
+
+<div class="prose" set:html={html} />

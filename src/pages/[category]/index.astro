@@ -1,0 +1,27 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Base from '../../layouts/Base.astro';
+import Icon from '../../components/Icon.astro';
+import SnippetExplorer from '../../components/SnippetExplorer.astro';
+import { CATEGORIES, type Category } from '../../consts';
+import { allSnippets, groupByProvider } from '../../lib/snippets';
+import { categoryIcons } from '../../lib/catalogue';
+import { href } from '../../lib/url';
+export const getStaticPaths = (() => CATEGORIES.map(category => ({ params: { category: category.id }, props: { category } }))) satisfies GetStaticPaths;
+interface Props { category: Category; }
+const { category } = Astro.props;
+const snippets = await allSnippets();
+const entries = snippets.filter(s => s.category.id === category.id);
+const providers = groupByProvider(entries);
+---
+<Base title={category.label} description={category.blurb}>
+  <div class="shell category-page">
+    <a class="back" href={href('/browse')}>← All snippets</a>
+    <header class="category-head"><span class="category-icon"><Icon name={categoryIcons[category.id]} size={27} /></span><div><p class="eyebrow">EXPLORE THE STACK</p><h1>{category.label}</h1><p>{category.blurb}</p></div></header>
+    <div class="coverage"><strong>{entries.length} examples</strong><span>Available from {providers.map(p => p.provider).join(', ')}.</span></div>
+    <SnippetExplorer snippets={snippets} category={category.id} />
+  </div>
+</Base>
+<style>
+  .category-page { padding-block: 32px 50px; }.back { font-size: .73rem; color: var(--ink-3); text-decoration: none; }.category-head { display: flex; gap: 20px; margin-top: 29px; align-items: flex-start; }.category-icon { display: grid; place-items: center; color: var(--stamp); background: var(--stamp-soft); border-radius: 13px; width: 59px; height: 59px; flex-shrink: 0; }.eyebrow { margin: 0 0 9px; }.category-head h1 { font-size: clamp(1.7rem,3vw,2.5rem); }.category-head p:last-child { color: var(--ink-2); font-size: .85rem; margin-top: 12px; }.coverage { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--ink-3); font-size: .73rem; margin: 26px 0; }.coverage strong { color: var(--ink-2); font-weight: 550; }
+</style>

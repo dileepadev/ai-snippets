@@ -1,0 +1,15 @@
+---
+import Base from '../layouts/Base.astro';
+import SnippetExplorer from '../components/SnippetExplorer.astro';
+import { allSnippets, groupByProvider, allLanguages } from '../lib/snippets';
+const snippets = await allSnippets();
+---
+<Base title="Browse snippets" description="Find official AI code examples by task, provider, language, and model type. Save useful snippets and share filtered results.">
+  <div class="shell browse-page">
+    <header class="browse-head"><p class="eyebrow">THE SNIPPET LIBRARY</p><h1 data-browse-heading>Find your next building block.</h1><p data-browse-intro>{snippets.length} source-linked examples from {groupByProvider(snippets).length} providers, in {allLanguages(snippets).length} languages. Find the one that fits what you’re building.</p></header>
+    <SnippetExplorer snippets={snippets} />
+  </div>
+</Base>
+<style>
+  .browse-page { padding-block: 42px 50px; }.browse-head { margin-bottom: 29px; }.browse-head .eyebrow { margin-bottom: 14px; }.browse-head h1 { font-size: clamp(1.85rem, 3vw, 2.6rem); letter-spacing: -.05em; }.browse-head > p:last-child { color: var(--ink-2); font-size: .87rem; margin-top: 14px; max-width: 70ch; }
+</style>

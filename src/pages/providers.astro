@@ -1,0 +1,33 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import { allSnippets, groupByProvider, allLanguages } from '../lib/snippets';
+import { providerColors } from '../lib/catalogue';
+import { href } from '../lib/url';
+const snippets = await allSnippets();
+const groups = groupByProvider(snippets);
+---
+<Base title="Providers" description="Compare actual snippet coverage across AI providers and open-source projects, with languages, categories, and direct links to examples.">
+  <div class="shell providers-page"><header><p class="eyebrow">THE TOOLS BEHIND THE CODE</p><h1>Different providers. One starting point.</h1><p>Explore {groups.length} providers and projects with examples in this library. Each card shows the languages and capabilities currently covered.</p></header>
+    <label class="control-search provider-search"><Icon name="search" size={20} /><span class="visually-hidden">Find a provider</span><input type="search" placeholder="Find a provider or project…" data-provider-search data-search-input autocomplete="off" /></label>
+    <p class="provider-count" data-provider-count aria-live="polite">{groups.length} providers & projects</p>
+    <div class="provider-grid">{groups.map(group => <section class="provider-card" data-provider-card={group.provider.toLowerCase()}><div class="provider-head"><span class="provider-mark" data-color={providerColors[group.provider]}>{group.provider === 'OpenAI' ? '◎' : group.provider === 'Hugging Face' ? 'HF' : group.provider.slice(0,1)}</span><h2>{group.provider}</h2><span class="provider-total">{group.snippets.length} {group.snippets.length === 1 ? 'snippet' : 'snippets'}</span></div><p class="provider-categories">{[...new Set(group.snippets.map(s => s.category.label))].join(' · ')}</p><div class="provider-languages">{allLanguages(group.snippets).map(language => <span class="pill">{language}</span>)}</div><ul>{group.snippets.slice(0,3).map(snippet => <li><a href={snippet.url}>{snippet.data.title}<Icon name="arrow" size={13} /></a></li>)}</ul><a class="provider-all" href={href(`/browse?provider=${encodeURIComponent(group.provider)}`)}>Explore {group.provider}<Icon name="arrow" size={15} /></a></section>)}</div>
+    <div class="provider-empty" data-provider-empty hidden><h2>No matching provider</h2><p>Try another name, or clear your search to see all projects.</p><button class="button button--quiet" type="button" data-provider-reset>Clear search</button></div>
+  </div>
+</Base>
+<script>
+  const input = document.querySelector<HTMLInputElement>('[data-provider-search]');
+  const cards = [...document.querySelectorAll<HTMLElement>('[data-provider-card]')];
+  const update = () => {
+    let count = 0;
+    for (const card of cards) { card.hidden = !card.dataset.providerCard?.includes(input?.value.trim().toLowerCase() ?? ''); if (!card.hidden) count++; }
+    document.querySelector('[data-provider-count]')!.textContent = `${count} ${count === 1 ? 'provider or project' : 'providers & projects'}`;
+    document.querySelector<HTMLElement>('[data-provider-empty]')!.hidden = count > 0;
+  };
+  input?.addEventListener('input', update);
+  document.querySelector('[data-provider-reset]')?.addEventListener('click', () => { if(input) { input.value = ''; update(); input.focus(); } });
+</script>
+<style>
+  .providers-page { padding-block: 42px 50px; }header h1 { font-size: clamp(1.85rem,3vw,2.6rem); max-width: 26ch; }header > p:last-child { margin-top: 15px; color: var(--ink-2); font-size: .86rem; }.provider-search { margin-top: 29px; }.provider-count { color: var(--ink-3); font-size: .72rem; margin-block: 20px 17px; }.provider-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; }.provider-card { display: flex; flex-direction: column; background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 22px; }.provider-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }.provider-head h2 { font-size: .9rem; letter-spacing: -.02em; }.provider-total { font-size: .61rem; color: var(--ink-3); margin-left: auto; }.provider-categories { color: var(--ink-2); font-size: .7rem; margin: 15px 0 11px; }.provider-languages { display: flex; flex-wrap: wrap; gap: 5px; }.provider-card ul { list-style: none; padding: 0; margin: 22px 0; }.provider-card li { border-top: 1px solid var(--rule-soft); padding-block: 10px; }.provider-card li a { display: flex; justify-content: space-between; align-items: center; gap: 10px; text-decoration: none; color: var(--ink-2); font-size: .72rem; }.provider-card li a:hover { color: var(--stamp); }.provider-all { display: flex; align-items: center; justify-content: space-between; text-decoration: none; font-size: .73rem; margin-top: auto; }.provider-empty { text-align: center; padding: 55px 20px; border: 1px dashed var(--rule); border-radius: 10px; }.provider-empty p { margin: 15px auto 25px; color: var(--ink-2); }
+  @media(max-width:1300px) { .provider-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }@media(max-width:600px) { .provider-grid { grid-template-columns: 1fr; } }
+</style>
