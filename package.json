@@ -1,0 +1,39 @@
+{
+  "name": "ai-snippets",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Official code snippets for AI model APIs, agent SDKs, and frameworks, in one place.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dileepadev/ai-snippets.git"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "dev-stop": "astro dev stop",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "validate": "node scripts/validate-snippets.mjs",
+    "new": "node scripts/new-snippet.mjs",
+    "test": "node --test --test-isolation=none tests/*.test.mjs"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.4",
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource-variable/public-sans": "^5.3.0",
+    "astro": "^7.3.3"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "esbuild": "^0.28.2",
+    "gray-matter": "^4.0.3",
+    "happy-dom": "^20.14.5",
+    "typescript": "^5.9.3"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
+}
