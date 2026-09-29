@@ -1,0 +1,60 @@
+{
+  "$comment": "The single source of truth for category folders and model types. src/consts.ts imports this, and so do the scripts in scripts/. Adding a category here is all it takes.",
+  "modelTypes": ["llm", "slm", "vision", "speech", "embeddings", "image", "video"],
+  "categories": [
+    {
+      "id": "model-apis",
+      "label": "Model APIs",
+      "blurb": "Hosted chat, completion, and reasoning endpoints from the model providers themselves.",
+      "examples": ["OpenAI", "Anthropic", "Google Gemini", "Mistral", "Cohere", "xAI", "DeepSeek", "Amazon Bedrock", "Azure OpenAI", "Groq", "OpenRouter"]
+    },
+    {
+      "id": "local-models",
+      "label": "SLMs and local models",
+      "blurb": "Running smaller or open-weight models on your own hardware.",
+      "examples": ["Ollama", "llama.cpp", "LM Studio", "Hugging Face Transformers", "vLLM", "MLX", "ONNX Runtime GenAI", "Foundry Local"]
+    },
+    {
+      "id": "agent-sdks",
+      "label": "Agent SDKs",
+      "blurb": "First-party SDKs for building agents that plan, call tools, and hand off work.",
+      "examples": ["OpenAI Agents SDK", "Claude Agent SDK", "Google ADK", "Microsoft Agent Framework", "Strands Agents"]
+    },
+    {
+      "id": "frameworks",
+      "label": "Frameworks",
+      "blurb": "Third-party libraries that sit above the model APIs and compose them.",
+      "examples": ["LangChain", "LangGraph", "LlamaIndex", "CrewAI", "Haystack", "DSPy", "Pydantic AI", "smolagents", "Vercel AI SDK", "Mastra"]
+    },
+    {
+      "id": "embeddings",
+      "label": "Embeddings",
+      "blurb": "Turning text and other inputs into vectors for search, clustering, and retrieval.",
+      "examples": ["OpenAI", "Cohere", "Voyage AI", "Google Gemini", "Sentence Transformers"]
+    },
+    {
+      "id": "vision",
+      "label": "Vision",
+      "blurb": "Passing images to models, plus detection and segmentation libraries.",
+      "examples": ["Image input on OpenAI, Anthropic, and Gemini", "Ultralytics YOLO", "Segment Anything (SAM)"]
+    },
+    {
+      "id": "speech",
+      "label": "Speech",
+      "blurb": "Speech to text, text to speech, and realtime voice sessions.",
+      "examples": ["OpenAI speech and Realtime API", "Whisper", "ElevenLabs", "Deepgram", "AssemblyAI"]
+    },
+    {
+      "id": "image-video",
+      "label": "Image and video generation",
+      "blurb": "Generating and editing images and video from prompts.",
+      "examples": ["OpenAI image generation", "Google Imagen and Veo", "FLUX (Black Forest Labs)", "Stability AI"]
+    },
+    {
+      "id": "protocols",
+      "label": "Protocols",
+      "blurb": "Open wire formats for connecting models to tools and to each other.",
+      "examples": ["Model Context Protocol (MCP) SDKs", "Agent2Agent (A2A)"]
+    }
+  ]
+}
