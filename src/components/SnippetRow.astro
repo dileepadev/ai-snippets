@@ -1,0 +1,20 @@
+---
+import type { Snippet } from '../lib/snippets';
+import { providerColors, categoryNames } from '../lib/catalogue';
+import Freshness from './Freshness.astro';
+import SaveButton from './SaveButton.astro';
+interface Props { snippet: Snippet; showCategory?: boolean; showProvider?: boolean; }
+const { snippet, showCategory = false } = Astro.props;
+const { data } = snippet;
+---
+<article class="row" data-id={snippet.id} data-category={snippet.category.id} data-provider={data.provider} data-languages={snippet.languages.join('|')} data-model-types={data.model_types.join('|')} data-freshness={snippet.freshness.state} data-verified={data.verified.toISOString()} data-title={data.title} data-search={`${data.title} ${data.provider} ${data.product} ${snippet.category.label} ${data.description ?? ''} ${data.tags.join(' ')} ${snippet.languages.join(' ')} ${data.prerequisites.join(' ')}`.toLowerCase()}>
+  <div class="row__top">
+    <span class="provider-mark" data-color={providerColors[data.provider] ?? 'neutral'} aria-hidden="true">{data.provider === 'OpenAI' ? '◎' : data.provider === 'Anthropic' ? 'A' : data.provider === 'Hugging Face' ? 'HF' : data.provider === 'Model Context Protocol' ? 'mcp' : data.provider.slice(0, 1)}</span>
+    <div><span class="row__provider">{data.provider}</span><span class="row__product">{data.product}</span></div>
+    <SaveButton id={snippet.id} title={data.title} />
+  </div>
+  <h3 class="row__title"><a href={snippet.url}>{data.title}</a></h3>
+  <p class="row__desc">{data.description}</p>
+  <div class="row__meta">{snippet.languages.map((language) => <span class="pill">{language}</span>)}</div>
+  <div class="row__bottom"><Freshness freshness={snippet.freshness} verified={data.verified} />{showCategory && <span class="row__cat">{categoryNames[snippet.category.id] ?? snippet.category.label}</span>}</div>
+</article>

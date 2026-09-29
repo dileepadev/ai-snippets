@@ -1,0 +1,35 @@
+---
+import Base from '../layouts/Base.astro';
+import { CATEGORIES } from '../consts';
+import { href } from '../lib/url';
+---
+
+<Base title="Page not found" description="That page is not in the catalogue.">
+  <div class="shell page">
+    <h1>Not in the catalogue</h1>
+    <p>
+      That address does not match a snippet or a category. Snippet pages look like
+      <code>/model-apis/openai-streaming</code>.
+    </p>
+    <p><a href={href('/browse')}>Browse everything</a></p>
+    <ul class="cats">
+      {CATEGORIES.map((c) => <li><a href={href(`/${c.id}`)}>{c.label}</a></li>)}
+    </ul>
+  </div>
+</Base>
+
+<style>
+  .page { padding-block: 4rem 6rem; max-width: 60ch; }
+  h1 { font-size: clamp(1.6rem, 4.5vw, 2.4rem); margin-bottom: 1rem; }
+  p { color: var(--ink-2); }
+  .cats {
+    list-style: none;
+    margin: 2rem 0 0;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--rule);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.25rem;
+    font-size: var(--t-sm);
+  }
+</style>

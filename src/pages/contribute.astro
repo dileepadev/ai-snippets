@@ -1,0 +1,281 @@
+---
+import { Code } from 'astro:components';
+import Base from '../layouts/Base.astro';
+import { CATEGORIES, MODEL_TYPES, SITE, FRESH_DAYS } from '../consts';
+import { allSnippets } from '../lib/snippets';
+import { href } from '../lib/url';
+
+const snippets = await allSnippets();
+const due = snippets.filter((s) => s.freshness.state !== 'current');
+
+const template = `---
+title: Stream a chat response
+provider: Example AI
+product: Example API
+description: One line on what the snippet does.
+prerequisites:
+  - Required SDK, credentials, and input files.
+expected_output: What the example returns, prints, or creates.
+caveat: Any omitted imports or placeholders.  # optional
+model_types: [llm]          # any of: ${MODEL_TYPES.join(', ')}
+source: https://docs.example.com/quickstart#streaming
+verified: 2026-09-21        # date you last checked this against the source
+packages:                   # versions the code was checked with
+  python: example-ai==1.4.0
+  typescript: "@example/ai@2.1.0"
+resources:
+  - label: API reference
+    url: https://docs.example.com/api
+  - label: Python SDK
+    url: https://github.com/example/example-python
+---
+
+\`\`\`python
+# Python code, exactly as it appears at the source
+\`\`\`
+
+\`\`\`typescript
+// TypeScript code, exactly as it appears at the source
+\`\`\`
+
+\`\`\`bash
+# cURL command, exactly as it appears at the source
+\`\`\`
+`;
+---
+
+<Base
+  title="Contribute"
+  description="How to add a snippet to the catalogue, or re-check one that already exists."
+>
+  <div class="shell page">
+    <header class="head">
+      <h1>Contribute</h1>
+      <p>
+        A snippet is one Markdown file. The frontmatter records where it came from and when it was
+        checked; the body holds one code block per language the source shows.
+      </p>
+    </header>
+
+    <div class="layout">
+      <div class="layout__main">
+        <section>
+          <h2>Add a snippet</h2>
+          <ol class="steps">
+            <li>
+              Find the example in the provider's official docs, SDK repo, or cookbook. Blog posts and
+              tutorials do not count, and neither does code you wrote yourself.
+            </li>
+            <li>
+              Create a Markdown file in the matching category folder, named{' '}
+              <code>&lt;provider&gt;-&lt;what-it-does&gt;.md</code>. For example{' '}
+              <code>snippets/model-apis/openai-streaming.md</code>.
+            </li>
+            <li>Add setup requirements and expected output, then copy the official code for each included language. Keep editorial notes separate from the source example.</li>
+            <li>
+              Run <code>npm run validate</code>, then open a pull request with the source link in
+              the description.
+            </li>
+          </ol>
+        </section>
+
+        <section>
+          <h2>The template</h2>
+          <p>
+            Also in the repository at <code>snippets/_TEMPLATE.md</code>, or run{' '}
+            <code>npm run new</code> to generate a file with today's date already filled in.
+          </p>
+          <Code code={template} lang="markdown" themes={{ light: 'github-light', dark: 'github-dark' }} />
+        </section>
+
+        <section>
+          <h2>Re-check an existing snippet</h2>
+          <p>
+            This helps as much as adding a new one. Open the snippet's source, confirm the code still
+            matches line for line, then update <code>verified</code> and <code>packages</code> and open
+            a pull request. A snippet checked more than {FRESH_DAYS} days ago is flagged on its page.
+          </p>
+          {
+            due.length > 0 ? (
+              <ul class="due">
+                {due.slice(0, 10).map((snippet) => (
+                  <li>
+                    <a href={snippet.url}>{snippet.data.title}</a>
+                    <span>{snippet.data.provider}</span>
+                    <span class="due__age">{snippet.freshness.phrase}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p class="due__none">Every snippet has a source-check date within the review window. You can still help by comparing it with today’s official documentation.</p>
+            )
+          }
+        </section>
+
+        <section>
+          <h2>What gets rejected</h2>
+          <dl class="rules">
+            <dt>Code from anywhere but an official source</dt>
+            <dd>Vendor docs, official SDK repos, and official cookbooks only.</dd>
+            <dt>Snippets tidied up on the way in</dt>
+            <dd>
+              Do not refactor, restyle, or fix a snippet. If the official version is broken, report it
+              upstream and note that in the pull request.
+            </dd>
+            <dt>A missing or approximate source link</dt>
+            <dd>The link goes to the exact page the code was copied from, anchor included.</dd>
+            <dt>Real API keys</dt>
+            <dd>Environment variables or placeholders, the way the official docs do it.</dd>
+          </dl>
+        </section>
+      </div>
+
+      <aside class="layout__aside">
+        <section class="aside-block">
+          <h2>Category folders</h2>
+          <ul class="folders">
+            {
+              CATEGORIES.map((c) => (
+                <li>
+                  <a href={href(`/${c.id}`)}>
+                    <code>{c.id}/</code>
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </section>
+
+        <section class="aside-block">
+          <h2>Frontmatter fields</h2>
+          <dl class="fields">
+            <dt><code>title</code></dt><dd>What the snippet does, in plain words.</dd>
+            <dt><code>provider</code></dt><dd>Who publishes it, e.g. Anthropic.</dd>
+            <dt><code>product</code></dt><dd>Which product or SDK, e.g. Messages API.</dd>
+            <dt><code>prerequisites</code></dt><dd>SDK, credentials, hardware, and input files.</dd>
+            <dt><code>expected_output</code></dt><dd>What the code returns or creates.</dd>
+            <dt><code>caveat</code></dt><dd>Missing setup, placeholders, and excerpt limits.</dd>
+            <dt><code>package_notes</code></dt><dd>Explain any unrecorded versions.</dd>
+            <dt><code>model_types</code></dt><dd>{MODEL_TYPES.join(', ')}</dd>
+            <dt><code>source</code></dt><dd>The exact page the code came from.</dd>
+            <dt><code>verified</code></dt><dd>The day you compared it with the source, not a runtime test.</dd>
+            <dt><code>packages</code></dt><dd>Language to version spec.</dd>
+            <dt><code>resources</code></dt><dd>Docs, API reference, SDK repo, cookbook.</dd>
+          </dl>
+        </section>
+
+        <section class="aside-block">
+          <h2>Elsewhere</h2>
+          <ul>
+            <li><a href={`${SITE.repo}/blob/main/CONTRIBUTING.md`} rel="noopener">CONTRIBUTING.md</a></li>
+            <li><a href={SITE.issues} rel="noopener">Open an issue</a></li>
+            <li><a href={`${SITE.repo}/blob/main/snippets/_TEMPLATE.md`} rel="noopener">Template file</a></li>
+          </ul>
+        </section>
+      </aside>
+    </div>
+  </div>
+</Base>
+
+<style>
+  .page { padding-block: 1.5rem 3.5rem; }
+
+  .head {
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .head h1 { font-size: clamp(1.6rem, 4.5vw, 2.4rem); margin-bottom: 0.6rem; }
+  .head p { color: var(--ink-2); font-size: var(--t-md); }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 230px;
+    gap: 3rem;
+    align-items: start;
+  }
+  @media (max-width: 1150px) {
+    .layout { grid-template-columns: 1fr; gap: 2rem; }
+  }
+
+  .layout__main section { margin-bottom: 2.5rem; }
+  .layout__main h2 {
+    font-size: var(--t-md);
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 1rem;
+  }
+  .layout__main p { color: var(--ink-2); max-width: var(--measure); }
+
+  .steps {
+    margin: 0;
+    padding-left: 1.25rem;
+    color: var(--ink-2);
+    max-width: var(--measure);
+  }
+  .steps li { margin-bottom: 0.6rem; }
+
+  .layout__main :global(pre.astro-code) {
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 1rem 1.1rem;
+    font-size: var(--t-sm);
+    line-height: 1.6;
+    overflow-x: auto;
+    background: var(--sheet) !important;
+  }
+
+  .due { list-style: none; margin: 1rem 0 0; padding: 0; }
+  .due li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1rem;
+    align-items: baseline;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid var(--rule-soft);
+    font-size: var(--t-sm);
+  }
+  .due li > a { font-weight: 600; color: var(--ink); text-decoration: none; }
+  .due li > a:hover { color: var(--stamp); text-decoration: underline; }
+  .due li > span { color: var(--ink-2); }
+  .due__age { margin-left: auto; color: var(--aging); font-family: var(--font-mono); font-size: var(--t-xs); }
+  .due__none { color: var(--fresh); }
+
+  .rules { margin: 0; max-width: var(--measure); }
+  .rules dt { font-weight: 700; margin-top: 1rem; }
+  .rules dt:first-of-type { margin-top: 0; }
+  .rules dd { margin: 0.15rem 0 0; color: var(--ink-2); }
+
+  .layout__aside {
+    position: sticky;
+    top: 76px;
+    display: grid;
+    gap: 1.75rem;
+    font-size: var(--t-sm);
+  }
+  @media (max-width: 1150px) {
+    .layout__aside { position: static; }
+  }
+
+  .aside-block h2 {
+    font-size: var(--t-xs);
+    color: var(--ink-3);
+    font-weight: 700;
+    letter-spacing: 0;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 0.5rem;
+  }
+  .aside-block ul { list-style: none; margin: 0; padding: 0; }
+  .aside-block li { margin-bottom: 0.3rem; }
+
+  .folders a { text-decoration: none; }
+  .folders a:hover code { color: var(--stamp); }
+  .folders code { color: var(--ink-2); font-size: var(--t-xs); }
+
+  .fields { margin: 0; }
+  .fields dt { margin-top: 0.5rem; }
+  .fields dt:first-child { margin-top: 0; }
+  .fields dt code { font-size: var(--t-xs); color: var(--ink); }
+  .fields dd { margin: 0; color: var(--ink-3); font-size: var(--t-xs); }
+</style>

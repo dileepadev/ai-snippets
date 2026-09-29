@@ -1,0 +1,24 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import { allSnippets } from '../lib/snippets';
+import { collections } from '../lib/catalogue';
+const snippets = await allSnippets();
+const byId = new Map(snippets.map(s => [s.id, s]));
+for (const collection of collections) for (const step of collection.steps) if (!byId.has(step.id)) throw new Error(`Collection references missing snippet: ${step.id}`);
+---
+<Base title="Collections" description="Task-based starting points for AI development: API calls, local models, tool-using agents, retrieval, streaming, and multimodal applications.">
+  <div class="shell collections-page">
+    <header><p class="eyebrow">A LITTLE DIRECTION GOES A LONG WAY</p><h1>Start with what you want to build.</h1><p>Six guided collections that connect the dots between individual examples. Explore them in order, or jump to the piece you need.</p></header>
+    <nav class="collection-jump" aria-label="Jump to collection">{collections.map(c => <a href={`#${c.id}`}><Icon name={c.icon} size={16} />{c.title}</a>)}</nav>
+    <div class="collections-grid">{collections.map((collection, index) => <section class="collection" id={collection.id}><div class="collection-top"><span class="collection-icon"><Icon name={collection.icon} size={25} /></span><span>COLLECTION {String(index + 1).padStart(2,'0')}</span></div><h2>{collection.title}</h2><p>{collection.description}</p><ol>{collection.steps.map(step => { const snippet = byId.get(step.id)!; return <li><a href={snippet.url}><span class="step-provider">{snippet.data.provider} · {snippet.languages.join(' / ')}</span><h3>{snippet.data.title} <Icon name="arrow" size={15} /></h3><p>{step.why}</p></a></li>; })}</ol></section>)}</div>
+    <p class="collection-note">These are learning paths through independent examples. Follow each snippet’s setup notes; examples from different SDKs are not a single runnable project.</p>
+  </div>
+</Base>
+<style>
+  .collections-page { padding-block: 42px 40px; } header h1 { font-size: clamp(1.85rem,3vw,2.6rem); max-width: 24ch; } header > p:last-child { margin-top: 16px; color: var(--ink-2); font-size: .86rem; max-width: 73ch; }
+  .collection-jump { display: flex; flex-wrap: wrap; gap: 9px; padding-block: 29px; }.collection-jump a { display: inline-flex; gap: 7px; align-items: center; font-size: .7rem; color: var(--ink-2); text-decoration: none; border: 1px solid var(--rule); border-radius: 6px; padding: 7px 11px; }.collection-jump a:hover { color: var(--stamp); border-color: var(--stamp); }
+  .collections-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; }.collection { background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; padding: 27px; scroll-margin-top: 94px; }.collection:target { border-color: var(--stamp); }.collection-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }.collection-top > span:last-child { font: .58rem var(--font-mono); color: var(--ink-3); letter-spacing: .08em; }.collection-icon { padding: 10px; border-radius: 9px; background: var(--stamp-soft); color: var(--stamp); }.collection h2 { font-size: 1.25rem; }.collection > p { color: var(--ink-2); font-size: .78rem; margin-top: 12px; min-height: 3.5em; }
+  .collection ol { list-style: none; counter-reset: steps; padding: 0; margin: 24px 0 0; }.collection li { counter-increment: steps; display: flex; align-items: baseline; gap: 13px; padding: 17px 0; border-top: 1px solid var(--rule-soft); }.collection li::before { content: counter(steps, decimal-leading-zero); font: .7rem var(--font-mono); color: var(--stamp); }.collection li a { display: block; color: var(--ink); text-decoration: none; flex: 1; min-width: 0; }.step-provider { display: block; color: var(--ink-3); font-size: .62rem; margin-bottom: 5px; }.collection li h3 { font-size: .82rem; letter-spacing: -.01em; line-height: 1.5; }.collection li h3 svg { float: right; margin-top: 3px; }.collection li a:hover h3 { color: var(--stamp); }.collection li p { color: var(--ink-2); font-size: .71rem; margin-top: 7px; }.collection-note { font-size: .75rem; color: var(--ink-3); max-width: 90ch; margin: 27px 0 0; }
+  @media(max-width:1000px) { .collections-grid { grid-template-columns: 1fr; } }.collection li:last-child { padding-bottom: 0; }
+</style>

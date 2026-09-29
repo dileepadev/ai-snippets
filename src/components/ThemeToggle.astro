@@ -1,0 +1,56 @@
+---
+/** Cycles light -> dark -> follow the system. Rendered as a button so it is
+    keyboard reachable; the label is written by the inline script below. */
+---
+<button class="control-button control-button--compact theme-toggle" type="button" data-theme-toggle aria-live="polite">
+  <span data-theme-label>Theme</span>
+</button>
+
+<script is:inline>
+  (() => {
+    const button = document.querySelector('[data-theme-toggle]');
+    if (!button) return;
+    const label = button.querySelector('[data-theme-label]');
+    const order = ['system', 'light', 'dark'];
+    const text = { system: 'Theme: system', light: 'Theme: light', dark: 'Theme: dark' };
+
+    // Site data can be blocked; fall back to following the system.
+    const read = () => {
+      try {
+        const mode = localStorage.getItem('ai-snippets-theme');
+        return order.includes(mode) ? mode : 'system';
+      } catch {
+        return 'system';
+      }
+    };
+
+    const remember = (mode) => {
+      try {
+        if (mode === 'system') localStorage.removeItem('ai-snippets-theme');
+        else localStorage.setItem('ai-snippets-theme', mode);
+      } catch {}
+    };
+
+    const paint = (mode) => {
+      const dark =
+        mode === 'dark' ||
+        (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      if (label) label.textContent = text[mode];
+      button.setAttribute('aria-label', `${text[mode]}. Change theme.`);
+    };
+
+    let mode = read();
+    paint(mode);
+
+    button.addEventListener('click', () => {
+      mode = order[(order.indexOf(mode) + 1) % order.length];
+      remember(mode);
+      paint(mode);
+    });
+
+    window
+      .matchMedia('(prefers-color-scheme: dark)')
+      .addEventListener('change', () => mode === 'system' && paint('system'));
+  })();
+</script>
